@@ -34,4 +34,4 @@ This is the most simplistic form of a functional account backend with proper reg
 
 [How to install Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs)
 
-[Work with queries](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)
+[How to work with queries](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)
