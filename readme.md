@@ -27,7 +27,11 @@ This is the most simplistic form of a functional account backend with proper reg
 
 ## Resources
 [What is a JWT Token?](https://jwt.io/introduction)
+
 [What is a password hash?](https://www.techtarget.com/searchdatamanagement/definition/hashing)
+
 [Get started with Express.js](https://expressjs.com/en/starter/hello-world.html)
+
 [How to install Node.js](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs)
+
 [Work with queries](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)
