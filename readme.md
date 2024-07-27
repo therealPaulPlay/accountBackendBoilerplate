@@ -6,7 +6,7 @@ Next, search for ```!CHANGE``` in the server.js file and change these properties
 Finally, run the project using ```node server.js```.
 
 ### What makes this template / boilerplate special
-This is the most simplistic form of a functional account backend with proper registration, longins, authentication ("bearer") tokens and password resets via email. 
+This is the most simplistic form of a functional account backend with proper registration, logins, authentication ("bearer") tokens and password resets via email. 
 
 ### Endpoint documentation
 1. POST /accounts/register - Used to register new accounts
