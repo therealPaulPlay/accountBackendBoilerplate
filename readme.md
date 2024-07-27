@@ -1,4 +1,4 @@
-# Single-file Express.js User-Backend with Email password resets
+# Single-file Express.js Account Backend Boilerplate
 
 ### Get started
 After cloning the repository, run ´´´npm install´´´ to install necessary dependencies.
@@ -7,6 +7,13 @@ Finally, run the project using ```node server.js```.
 
 ### What makes this template / boilerplate special
 This is the most simplistic form of a functional account backend with proper registration, longins, authentication ("bearer") tokens and password resets via email. 
+
+### Endpoint documentation
+1. POST /accounts/register - Used to register new accounts
+2. POST /accounts/login - Users can log in using this endpoint
+3. DELETE /accounts/delete - Users can delete their account using this
+4. POST /accounts/reset-password-request - Used to send out password reset emails
+5. POST /accounts/reset-password - Users can reset their password using an access token from the reset email
 
 ### Database setup
  This boilerplate expects a basic MySQL database setup with:
