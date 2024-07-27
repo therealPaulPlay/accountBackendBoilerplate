@@ -1,7 +1,7 @@
 # Single-file Express.js Account Backend Boilerplate
 
 ### Get started
-After cloning the repository, run ´´´npm install´´´ to install necessary dependencies.
+After cloning the repository, run ```npm install``` to install necessary dependencies.
 Next, search for ```!CHANGE``` in the server.js file and change these properties to your liking. Most of these **have** to be changed, as they are important credentials.
 Finally, run the project using ```node server.js```.
 
