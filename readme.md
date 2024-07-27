@@ -17,13 +17,13 @@ This is the most simplistic form of a functional account backend with proper reg
 
 ### Database setup
  This boilerplate expects a basic MySQL database setup with:
-    1 - A table named "accounts"
-    2 - The follwing columns in said table:
-        1. id (bigint)
-        2. created_at (datetime)
-        3. email (varchar(255))
-        4. password (varchar(255))
-        5. user_name (varchar(255)
+    1. A table named "accounts"
+    2. The follwing columns in said table:
+       1. id (bigint)
+       2. created_at (datetime)
+       3. email (varchar(255))
+       4. password (varchar(255))
+       5. user_name (varchar(255)
 
 ## Resources
 [What is a JWT Token?](https://jwt.io/introduction)
