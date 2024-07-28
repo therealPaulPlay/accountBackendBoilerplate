@@ -302,14 +302,15 @@ app.delete('/accounts/delete', async (req, res) => {
 
 // Password resets via email -----------------------------------------------------------------------------
 
-// Configure your email service
-const transporter = nodemailer.createTransport({
-    service: 'Gmail', // change this to your provider, Gmail is an example
+// Configure your email service - !CHANGE these details to match your email provider
+let transporter = nodemailer.createTransport({
+    host: "smtp.example.com",
+    port: 465,
     auth: {
-        user: 'your-gmail-address@gmail.com', // !CHANGE these. Ideally create a new account and then fill in the correct details. Need help with Gmail? -> https://stackoverflow.com/a/45479968
-        pass: 'app password'
-    }
-});
+      user: "email-address",
+      pass: "password", // ideally store in a .env file
+    },
+  });
 
 // request password reset email endpoint
 app.post('/accounts/reset-password-request', async (req, res) => {
