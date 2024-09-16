@@ -11,7 +11,7 @@ RUN npm install
 # Bundle app source
 COPY . .
 
-# Change the port if needed
+# This is purely informational! Change it to the port you are using for good measure
 EXPOSE 3000
 
 # Run the node command with server.js to start it

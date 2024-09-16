@@ -18,7 +18,7 @@ const port = 3000; // runs on port 3000, can be changed
 // CORS configuration ------------------------------------------------------------
 app.use(cors({
     origin: [
-        "http://localhost:3000",
+        "http://localhost:3000", // For testing
         "https://input-your-domain.com" // !CHANGE this to your domain, add more domains if needed. Performing requests from unlisted websites will result in CORS errors.
     ]
 }));
@@ -105,6 +105,7 @@ function createNewJwtToken(user) {
 }
 
 // Check if the id from the bearer token matches the ip passed in the request. This is to make sure the token belongs to this user and not just any user.
+// Use this middleware for all requests that include the "id" of the user as well as the bearer token in the Authorization header to ensure it's really them
 function authenticateTokenWithId(req, res, next) {
     const authorizationHeader = req.headers['authorization'];
 
@@ -136,7 +137,9 @@ function authenticateTokenWithId(req, res, next) {
     }
 }
 
-// ENDPOINTS ---------------------------------------------------------------------------------------------------------------------------------------
+// Rate Limiters -----------------------------------------------------------------------------------------------------------------------------------
+
+// Rate limiting is important to ensure that nobody is sending a huge amount of requests that would slow down your server and/or database
 
 const loginLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
@@ -151,6 +154,15 @@ const registerLimiter = rateLimit({
     max: 10, // limit each IP to 10 register requests per windowMs
     message: { error: 'Too many accounts created from this IP, please try again after 24 hours.' }
 });
+
+const standardLimiter = rateLimit({
+    windowMs: 1000, // 1 second
+    keyGenerator: (req) => req.clientIp, // use correct ip 
+    max: 5, // limit each IP to 5 standard requests per second
+    message: { error: 'You are sending too many requests.' }
+});
+
+// Endpoints ---------------------------------------------------------------------------------------------------------------------------------------
 
 // Register Endpoint
 app.post('/accounts/register', registerLimiter, async (req, res) => {
@@ -257,7 +269,7 @@ app.post('/accounts/login', loginLimiter, async (req, res) => {
 });
 
 // Delete Account endpoint
-app.delete('/accounts/delete', async (req, res) => {
+app.delete('/accounts/delete', standardLimiter, async (req, res) => {
     const { id, password } = req.body; // include these 2 properties in the request body
 
     if (!id || !password) {
@@ -313,7 +325,7 @@ let transporter = nodemailer.createTransport({
   });
 
 // request password reset email endpoint
-app.post('/accounts/reset-password-request', async (req, res) => {
+app.post('/accounts/reset-password-request', standardLimiter, async (req, res) => {
     const { email } = req.body; // include this property in the request body
 
     if (!email) {
@@ -356,7 +368,7 @@ app.post('/accounts/reset-password-request', async (req, res) => {
 });
 
 // reset password endpoint
-app.post('/accounts/reset-password', async (req, res) => {
+app.post('/accounts/reset-password', standardLimiter, async (req, res) => {
     const { token, newPassword } = req.body; // include these 2 properties in the request body
 
     if (!token || !newPassword) {
