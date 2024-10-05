@@ -31,6 +31,9 @@ app.use(xss()); // prevent xss attacks
 // MySQL Database Connection ----------------------------------------------------------------------------
 
 // !CHANGE these details to match your Database config
+
+const RETRY_INTERVAL = 30000; // 30 seconds retry interval if the connection fails
+
 const db = mysql.createConnection({
     host: "your-db-ip-or-domain",
     port: 3306,
@@ -39,13 +42,28 @@ const db = mysql.createConnection({
     database: "your-db-name"
 });
 
-db.connect(err => {
-    if (err) {
-        console.error('Error connecting to MySQL database:', err);
-        return;
-    }
-    console.log('Connected to MySQL database');
-});
+function connectDB() {
+    db.connect(err => {
+        if (err) {
+            console.error('Error connecting to MySQL database:', err);
+            console.log(`Connection failed. Retrying in ${RETRY_INTERVAL / 1000} seconds...`);
+            setTimeout(connectDB, RETRY_INTERVAL);
+            return;
+        }
+        console.log('Connected to MySQL database');
+    });
+
+    db.on('error', (err) => {
+        console.error('Database connection error:', err);
+        
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            console.log('Database connection lost. Attempting to reconnect...');
+            setTimeout(connectDB, RETRY_INTERVAL);
+        }
+    });
+}
+
+connectDB();
 
 // Password checking and hash generation ------------------------------------------------------------------------------------------------------
 
@@ -84,7 +102,7 @@ function createNewJwtToken(user) {
 
     try {
         const jwtTokenExpirationTime = Math.floor(Date.now() / 1000) + (24 * 60 * 60); // !CHANGE expiration period of the bearer token, currently set to 24h (24 * 60 * 60 = 86400 seconds = 1d). Can be extended if needed
-        
+
         accessToken = jwt.sign(
             {
                 sub: user.email, // Subject (email)
@@ -144,7 +162,7 @@ function authenticateTokenWithId(req, res, next) {
 const loginLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     keyGenerator: (req) => req.clientIp, // use correct ip and not the one of the proxy. This uses request-ip, a package that checks various aspects of the request to get the correct ip address.
-    max: 5, 
+    max: 5,
     message: 'Too many login attempts from this IP, please try again later.'
 });
 
@@ -319,10 +337,10 @@ let transporter = nodemailer.createTransport({
     host: "smtp.example.com",
     port: 465,
     auth: {
-      user: "email-address",
-      pass: "password", // ideally store in a .env file
+        user: "email-address",
+        pass: "password", // ideally store in a .env file
     },
-  });
+});
 
 // request password reset email endpoint
 app.post('/accounts/reset-password-request', standardLimiter, async (req, res) => {
