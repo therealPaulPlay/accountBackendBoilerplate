@@ -1,4 +1,5 @@
-FROM node:14
+# Environment Image
+FROM node:20
 
 # Create app directory
 WORKDIR /usr/src/app

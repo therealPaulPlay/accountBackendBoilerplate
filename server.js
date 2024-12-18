@@ -10,9 +10,9 @@ const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-const port = 3000; // runs on port 3000, can be changed
+const port = 3000; // Runs on port 3000, can be changed
 
-/* Thank you for cloning my Account Backend Boilerplate! To make it work for your use case, find all comments that include !CHANGE and change the values accordingly. */
+// Thank you for cloning my Account Backend Boilerplate! To make it work for your use case, find all comments that include !CHANGE and change the values accordingly.
 
 
 // CORS configuration ------------------------------------------------------------
@@ -30,39 +30,59 @@ app.use(xss()); // prevent xss attacks
 
 // MySQL Database Connection ----------------------------------------------------------------------------
 
-// !CHANGE these details to match your Database config
+const RETRY_INTERVAL = 5000;
+let pool;
 
-const RETRY_INTERVAL = 30000; // 30 seconds retry interval if the connection fails
+function createDBPool() {
+    // Create a connection pool - needed for high-throughput operations,
+    // as one connection can become a bottleneck
 
-const db = mysql.createConnection({
-    host: "your-db-ip-or-domain",
-    port: 3306,
-    user: "your-db-user",
-    password: "your-db-password",
-    database: "your-db-name"
-});
-
-function connectDB() {
-    db.connect(err => {
-        if (err) {
-            console.error('Error connecting to MySQL database:', err);
-            console.log(`Connection failed. Retrying in ${RETRY_INTERVAL / 1000} seconds...`);
-            setTimeout(connectDB, RETRY_INTERVAL);
-            return;
-        }
-        console.log('Connected to MySQL database');
-    });
-
-    db.on('error', (err) => {
-        console.error('Database connection error:', err);
-        
-        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-            console.log('Database connection lost. Attempting to reconnect...');
-            setTimeout(connectDB, RETRY_INTERVAL);
-        }
+    // !CHANGE these details to match your Database config
+    return mysql.createPool({
+        host: "your-db-ip-or-domain",
+        port: 3306,
+        user: "your-db-user",
+        password: "your-db-password",
+        database: "your-db-name",
+        waitForConnections: true,
+        connectionLimit: 10,    // Adjust based on your expected concurrency - a regular MySQL db can handle up to ~75
+        queueLimit: 0           // No limit on queued connection requests
     });
 }
 
+function getDB() {
+    // Return the pool instance instead of a single connection
+    if (!pool) {
+        console.error("Database pool is not initialized.");
+    }
+    return pool;
+}
+
+function connectDB() {
+    // Create the pool
+    pool = createDBPool();
+
+    // Test the connection when starting the pool
+    pool.getConnection((err, connection) => {
+        if (err) {
+            console.error('Error connecting to MySQL pool:', err);
+            console.log(`Connection failed. Retrying in ${RETRY_INTERVAL / 1000} seconds...`);
+            setTimeout(connectDB, RETRY_INTERVAL); // Retry pool creation
+            return;
+        }
+
+        console.log('Connected to MySQL pool');
+        connection.release(); // Release the test connection back to the pool
+    });
+
+    pool.on('error', (err) => {
+        console.error('Database pool error:', err);
+        console.log('Attempting to recreate the pool...');
+        setTimeout(connectDB, RETRY_INTERVAL); // Attempt to recreate the pool on error
+    });
+}
+
+// Initialize Database connection
 connectDB();
 
 // Password checking and hash generation ------------------------------------------------------------------------------------------------------
@@ -184,6 +204,8 @@ const standardLimiter = rateLimit({
 
 // Register Endpoint
 app.post('/accounts/register', registerLimiter, async (req, res) => {
+    const db = getDB();
+
     let { userName, email, password } = req.body; // include these 3 properties in the request body
     const userIp = req.clientIp;
 
@@ -245,6 +267,7 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
 
 // Login Endpoint
 app.post('/accounts/login', loginLimiter, async (req, res) => {
+    const db = getDB();
     const { email, password } = req.body; // include these 2 properties in the request body
 
     if (!email || !password) {
@@ -288,6 +311,7 @@ app.post('/accounts/login', loginLimiter, async (req, res) => {
 
 // Delete Account endpoint
 app.delete('/accounts/delete', standardLimiter, async (req, res) => {
+    const db = getDB();
     const { id, password } = req.body; // include these 2 properties in the request body
 
     if (!id || !password) {
@@ -344,6 +368,7 @@ let transporter = nodemailer.createTransport({
 
 // request password reset email endpoint
 app.post('/accounts/reset-password-request', standardLimiter, async (req, res) => {
+    const db = getDB();
     const { email } = req.body; // include this property in the request body
 
     if (!email) {
@@ -387,6 +412,7 @@ app.post('/accounts/reset-password-request', standardLimiter, async (req, res) =
 
 // reset password endpoint
 app.post('/accounts/reset-password', standardLimiter, async (req, res) => {
+    const db = getDB();
     const { token, newPassword } = req.body; // include these 2 properties in the request body
 
     if (!token || !newPassword) {
