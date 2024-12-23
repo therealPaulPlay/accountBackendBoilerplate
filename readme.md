@@ -2,10 +2,10 @@
 
 ### Get started
 After cloning the repository, run ```npm install``` to install necessary dependencies.
-Next, search for ```!CHANGE``` in the server.js file and change these properties to your liking. Most of these **have** to be changed, as they are important credentials.
+Next, search for ```!CHANGE``` in the server.js file and change these properties to your liking. Most of these **have** to be changed, as they are important details specific to your scenario.
 Finally, run the project using ```node server.js```.
 
-### What makes this template / boilerplate special
+### What makes this template special
 This is the most simplistic form of a functional account backend with proper registration, logins, authentication ("bearer") tokens and password resets via email. 
 
 ### Endpoint documentation
