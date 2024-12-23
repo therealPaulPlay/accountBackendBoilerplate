@@ -10,10 +10,7 @@ const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-const port = 3000; // Runs on port 3000, can be changed
-
-// Thank you for cloning my Account Backend Boilerplate! To make it work for your use case, find all comments that include !CHANGE and change the values accordingly.
-
+const port = 3000; // !CHANGE to your preferred port
 
 // CORS configuration ------------------------------------------------------------
 app.use(cors({
@@ -24,9 +21,9 @@ app.use(cors({
 }));
 
 // Middleware -------------------------------------------------------------------------------------
-app.use(bodyParser.json()); // parse incoming json requests automatically
-app.use(requestIp.mw()); // apply the requestIp middleware to get the actual ip and not the ip of the proxy. Used for rate limiting
-app.use(xss()); // prevent xss attacks
+app.use(bodyParser.json()); // Parse incoming json requests automatically
+app.use(requestIp.mw()); // Apply the requestIp middleware which searches for the userIP in many headers and request details
+app.use(xss()); // Prevent xss attacks by stripping out scripts
 
 // MySQL Database Connection ----------------------------------------------------------------------------
 
@@ -34,9 +31,7 @@ const RETRY_INTERVAL = 5000;
 let pool;
 
 function createDBPool() {
-    // Create a connection pool - needed for high-throughput operations,
-    // as one connection can become a bottleneck
-
+    // Create a connection pool - needed for high-throughput operations
     // !CHANGE these details to match your Database config
     return mysql.createPool({
         host: "your-db-ip-or-domain",
@@ -46,20 +41,17 @@ function createDBPool() {
         database: "your-db-name",
         waitForConnections: true,
         connectionLimit: 10,    // Adjust based on your expected concurrency - a regular MySQL db can handle up to ~75
-        queueLimit: 0           // No limit on queued connection requests
+        queueLimit: 0           // 0 means unlimited
     });
 }
 
 function getDB() {
     // Return the pool instance instead of a single connection
-    if (!pool) {
-        console.error("Database pool is not initialized.");
-    }
+    if (!pool) console.error("Database pool is not initialized.");
     return pool;
 }
 
 function connectDB() {
-    // Create the pool
     pool = createDBPool();
 
     // Test the connection when starting the pool
@@ -87,11 +79,11 @@ connectDB();
 
 // Password checking and hash generation ------------------------------------------------------------------------------------------------------
 
-// A hash is a large string that can be created from a user password and validated against a user password, but cannot be "decrypted" into the original password.
+// A hash is a large string that can be created from a user password and validated against a user password. Hashing is a one-way operation, it cannot be reverted back into a password.
 
-// for Register - generate hash of password
+// Generate password hash for the registration
 async function getEncodedPassword(plainPassword) {
-    const saltRounds = 15; // Number of salt rounds to use for hashing
+    const saltRounds = 15;
     try {
         const hashedPassword = await bcrypt.hash(plainPassword, saltRounds);
         return hashedPassword;
@@ -101,7 +93,7 @@ async function getEncodedPassword(plainPassword) {
     }
 }
 
-// for Login - compare hash with password
+// Check password against hash for the login
 async function isPasswordValid(plainPassword, hashedPassword) {
     try {
         const isValid = await bcrypt.compare(plainPassword, hashedPassword);
@@ -113,19 +105,17 @@ async function isPasswordValid(plainPassword, hashedPassword) {
 }
 
 // JWT Authentication with Bearer Token ------------------------------------------------------------------------------------------------
-// A bearer token is a token used to authenticate requests. When the user logs in, this token will be sent back in the response of the login request and should be stored as a cookie in the frontend.
-
-const SECRET_KEY = "YOUR_KEY"; // !CHANGE input a jwt secret key. Simply come up with a long string of numbers and characters, ideally up to 32 chars long. For better security, make sure to use a .env file and store your keys there
+const SECRET_KEY = "YOUR_KEY"; // !CHANGE input a JWT secret key. Simply come up with a long string of numbers and characters, ideally up to 32 chars long. For better security, make sure to use a .env file and store your keys there
 
 function createNewJwtToken(user) {
     let accessToken = '';
 
     try {
-        const jwtTokenExpirationTime = Math.floor(Date.now() / 1000) + (24 * 60 * 60); // !CHANGE expiration period of the bearer token, currently set to 24h (24 * 60 * 60 = 86400 seconds = 1d). Can be extended if needed
+        const jwtTokenExpirationTime = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // !CHANGE expiration period of the bearer token, currently set to 7 days (7 * 24 * 60 * 60 = 604,800 seconds).
 
         accessToken = jwt.sign(
             {
-                sub: user.email, // Subject (email)
+                sub: user.email, // Subject (email address)
                 userId: user.id // Custom claim for user ID
             },
             SECRET_KEY,
@@ -143,7 +133,7 @@ function createNewJwtToken(user) {
 }
 
 // Check if the id from the bearer token matches the ip passed in the request. This is to make sure the token belongs to this user and not just any user.
-// Use this middleware for all requests that include the "id" of the user as well as the bearer token in the Authorization header to ensure it's really them
+// Use this middleware for all requests that include the "id" of the user in the request body as well as the bearer token in the Authorization header to ensure it's really them.
 function authenticateTokenWithId(req, res, next) {
     const authorizationHeader = req.headers['authorization'];
 
@@ -176,12 +166,11 @@ function authenticateTokenWithId(req, res, next) {
 }
 
 // Rate Limiters -----------------------------------------------------------------------------------------------------------------------------------
-
-// Rate limiting is important to ensure that nobody is sending a huge amount of requests that would slow down your server and/or database
+// Rate-limiting is important to ensure that nobody is sending a huge amount of requests that would slow down your server and/or database
 
 const loginLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
-    keyGenerator: (req) => req.clientIp, // use correct ip and not the one of the proxy. This uses request-ip, a package that checks various aspects of the request to get the correct ip address.
+    keyGenerator: (req) => req.clientIp, // Use correct ip and not the one of the proxy. This uses request-ip, a package that checks various aspects of the request to get the correct ip address.
     max: 5,
     message: 'Too many login attempts from this IP, please try again later.'
 });
@@ -196,7 +185,7 @@ const registerLimiter = rateLimit({
 const standardLimiter = rateLimit({
     windowMs: 1000, // 1 second
     keyGenerator: (req) => req.clientIp, // use correct ip 
-    max: 5, // limit each IP to 5 standard requests per second
+    max: 10, // limit each IP to 10 standard requests per second
     message: { error: 'You are sending too many requests.' }
 });
 
@@ -206,15 +195,19 @@ const standardLimiter = rateLimit({
 app.post('/accounts/register', registerLimiter, async (req, res) => {
     const db = getDB();
 
-    let { userName, email, password } = req.body; // include these 3 properties in the request body
+    let { userName, email, password } = req.body; // Include these 3 properties in the request body
     const userIp = req.clientIp;
 
     if (!userName || !email || !password) {
         return res.status(400).json({ error: 'Username, email, and password are required.' });
     }
 
-    userName = userName.trim(); // remove whitespaces from username
-    email = email.trim(); // remove whitespaces from email
+    userName = userName.trim(); // Remove whitespaces from username
+    email = email.trim(); // Remove whitespaces from email
+
+    if (userName.length < 4) {
+        return res.status(400).json({ error: "Username is too short." });
+    }
 
     try {
         // Check if email already exists
@@ -230,7 +223,7 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
             return res.status(409).json({ error: 'Email is already in use.' });
         }
 
-        // Check if username already exists. !CHANGE this if you want to allow duplicate usernames (just remove the next 11 lines)
+        // Check if username already exists to prevent duplicates
         const userNameExistsQuery = 'SELECT id FROM accounts WHERE user_name = ?';
         const existingUserNameUser = await new Promise((resolve, reject) => {
             db.query(userNameExistsQuery, [userName], (err, results) => {
@@ -268,7 +261,7 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
 // Login Endpoint
 app.post('/accounts/login', loginLimiter, async (req, res) => {
     const db = getDB();
-    const { email, password } = req.body; // include these 2 properties in the request body
+    const { email, password } = req.body; // Include these 2 properties in the request body
 
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required.' });
@@ -299,7 +292,7 @@ app.post('/accounts/login', loginLimiter, async (req, res) => {
 
         res.json({
             message: 'Login successful',
-            access_token: accessToken, // here, the bearer token is being returned. Save it in the frontend for future requests.
+            access_token: accessToken, // Here, the bearer token is being returned. Save it in the frontend to authorize future requests.
             id: user.id,
             userName: user.user_name
         });
@@ -362,7 +355,7 @@ let transporter = nodemailer.createTransport({
     port: 465,
     auth: {
         user: "email-address",
-        pass: "password", // ideally store in a .env file
+        pass: "password", // Ideally store in a .env file
     },
 });
 
@@ -398,7 +391,7 @@ app.post('/accounts/reset-password-request', standardLimiter, async (req, res) =
             from: 'your-gmail-address@gmail.com', // !CHANGE this to your email
             to: email,
             subject: 'Password Reset',
-            text: `Please click this link to reset your password: ${resetUrl}` // you can adjust the text as you wish
+            text: `Please click this link to reset your password: ${resetUrl}` // You can adjust the text as you wish
         };
 
         await transporter.sendMail(mailOptions);
@@ -410,7 +403,7 @@ app.post('/accounts/reset-password-request', standardLimiter, async (req, res) =
     }
 });
 
-// reset password endpoint
+// Reset password endpoint
 app.post('/accounts/reset-password', standardLimiter, async (req, res) => {
     const db = getDB();
     const { token, newPassword } = req.body; // include these 2 properties in the request body
@@ -429,7 +422,7 @@ app.post('/accounts/reset-password', standardLimiter, async (req, res) => {
         // Update the user's password in the database
         const updatePasswordQuery = 'UPDATE accounts SET password = ? WHERE id = ?';
         await new Promise((resolve, reject) => {
-            db.query(updatePasswordQuery, [hashedPassword, decoded.id], (err, results) => { // this takes the id from the authentication token to ensure only this account can be resetted
+            db.query(updatePasswordQuery, [hashedPassword, decoded.id], (err, results) => { // This takes the id from the authentication token to ensure only this account can be resetted
                 if (err) return reject(err);
                 resolve(results);
             });
