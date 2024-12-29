@@ -203,7 +203,7 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
     }
 
     userName = userName.trim(); // Remove whitespaces from username
-    email = email.trim(); // Remove whitespaces from email
+    email = email.trim().toLowerCase(); // Remove whitespaces from email and lowercase
 
     if (userName.length < 4) {
         return res.status(400).json({ error: "Username is too short." });
