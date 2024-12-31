@@ -351,7 +351,7 @@ app.delete('/accounts/delete', standardLimiter, async (req, res) => {
 // Configure your email service - !CHANGE these details to match your email provider
 let transporter = nodemailer.createTransport({
     host: "smtp.example.com",
-    port: 465,
+    port: Number(465), // Format port always as number - this is in place as you'll likely load this from a .env, which returns strings
     auth: {
         user: "email-address",
         pass: "password", // Ideally store in a .env file
