@@ -83,7 +83,7 @@ connectDB();
 
 // Generate password hash for the registration
 async function getEncodedPassword(plainPassword) {
-    const saltRounds = 15;
+    const saltRounds = 10;
     try {
         const hashedPassword = await bcrypt.hash(plainPassword, saltRounds);
         return hashedPassword;
