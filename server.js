@@ -362,6 +362,8 @@ let transporter = nodemailer.createTransport({
     },
 });
 
+const RESET_SECRET_KEY = "your-reset-secret-key"; // Another JWT secret, only used for password resets
+
 // request password reset email endpoint
 app.post('/accounts/reset-password-request', standardLimiter, async (req, res) => {
     const db = getDB();
@@ -386,7 +388,7 @@ app.post('/accounts/reset-password-request', standardLimiter, async (req, res) =
         }
 
         // Create a password reset token
-        const resetToken = jwt.sign({ email: email, id: user.id }, SECRET_KEY, { expiresIn: '1h' });
+        const resetToken = jwt.sign({ email: email, id: user.id }, RESET_SECRET_KEY, { expiresIn: '1h' });
 
         // Send email with the reset token
         const resetUrl = `https://your-domain.com?token=${resetToken}`; // !CHANGE this to your domain and handle it in the frontend accordingly. You can get the query parameter using URLSearchParams https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams
@@ -417,7 +419,7 @@ app.post('/accounts/reset-password', standardLimiter, async (req, res) => {
 
     try {
         // Verify the reset token + get user Id from the token so that the correct account's password can be changed
-        const decoded = jwt.verify(token, SECRET_KEY);
+        const decoded = jwt.verify(token, RESET_SECRET_KEY);
 
         // Hash the new password
         const hashedPassword = await getEncodedPassword(newPassword);
