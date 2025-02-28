@@ -201,18 +201,18 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
         return res.status(400).json({ error: 'Username, email, and password are required.' });
     }
 
-    userName = userName.trim(); // Remove whitespaces from username
-    email = email.trim().toLowerCase(); // Remove whitespaces from email and lowercase
-
-    if (userName.length < 4 || email.length < 5) {
-        return res.status(400).json({ error: "Username or email are too short." });
-    }
-
-    if (userName.length > 50 || email.length > 100) {
-        return res.status(400).json({ error: "Username or email are too long." });
-    }
-
     try {
+        userName = userName.trim(); // Remove whitespaces from username
+        email = email.trim().toLowerCase(); // Remove whitespaces from email and lowercase
+
+        if (userName.length < 4 || email.length < 5) {
+            return res.status(400).json({ error: "Username or email are too short." });
+        }
+
+        if (userName.length > 50 || email.length > 100) {
+            return res.status(400).json({ error: "Username or email are too long." });
+        }
+        
         // Check if email already exists
         const emailExistsQuery = 'SELECT id FROM accounts WHERE email = ?';
         const existingEmailUser = await new Promise((resolve, reject) => {
