@@ -216,7 +216,7 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
         // Check if email already exists
         const emailExistsQuery = 'SELECT id FROM accounts WHERE email = ?';
         const existingEmailUser = await new Promise((resolve, reject) => {
-            db.query(emailExistsQuery, [email], (err, results) => {
+            db.execute(emailExistsQuery, [email], (err, results) => {
                 if (err) return reject(err);
                 resolve(results[0]);
             });
@@ -229,7 +229,7 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
         // Check if username already exists to prevent duplicates
         const userNameExistsQuery = 'SELECT id FROM accounts WHERE user_name = ?';
         const existingUserNameUser = await new Promise((resolve, reject) => {
-            db.query(userNameExistsQuery, [userName], (err, results) => {
+            db.execute(userNameExistsQuery, [userName], (err, results) => {
                 if (err) return reject(err);
                 resolve(results[0]);
             });
@@ -248,7 +248,7 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
         // Insert new user into the database
         const insertUserQuery = 'INSERT INTO accounts (user_name, email, password, created_at) VALUES (?, ?, ?, ?)';
         const newUser = await new Promise((resolve, reject) => {
-            db.query(insertUserQuery, [userName, email, hashedPassword, now], (err, results) => {
+            db.execute(insertUserQuery, [userName, email, hashedPassword, now], (err, results) => {
                 if (err) return reject(err);
                 resolve(results.insertId);
             });
@@ -274,7 +274,7 @@ app.post('/accounts/login', loginLimiter, async (req, res) => {
         // Find user by email
         const userQuery = 'SELECT id, user_name, password FROM accounts WHERE email = ?';
         const user = await new Promise((resolve, reject) => {
-            db.query(userQuery, [email], (err, results) => {
+            db.execute(userQuery, [email], (err, results) => {
                 if (err) return reject(err);
                 resolve(results[0]);
             });
@@ -318,7 +318,7 @@ app.delete('/accounts/delete', standardLimiter, async (req, res) => {
         // Find user by email to retrieve password hash
         const userQuery = 'SELECT password FROM accounts WHERE id = ?';
         const user = await new Promise((resolve, reject) => {
-            db.query(userQuery, [id], (err, results) => {
+            db.execute(userQuery, [id], (err, results) => {
                 if (err) return reject(err);
                 resolve(results[0]);
             });
@@ -337,7 +337,7 @@ app.delete('/accounts/delete', standardLimiter, async (req, res) => {
         // Delete user account
         const deleteUserQuery = 'DELETE FROM accounts WHERE id = ?';
         await new Promise((resolve, reject) => {
-            db.query(deleteUserQuery, [id], (err, results) => {
+            db.execute(deleteUserQuery, [id], (err, results) => {
                 if (err) return reject(err);
                 resolve(results);
             });
@@ -377,7 +377,7 @@ app.post('/accounts/reset-password-request', standardLimiter, async (req, res) =
         // Find user by email
         const userQuery = 'SELECT id FROM accounts WHERE email = ?';
         const user = await new Promise((resolve, reject) => {
-            db.query(userQuery, [email], (err, results) => {
+            db.execute(userQuery, [email], (err, results) => {
                 if (err) return reject(err);
                 resolve(results[0]);
             });
@@ -427,7 +427,7 @@ app.post('/accounts/reset-password', standardLimiter, async (req, res) => {
         // Update the user's password in the database
         const updatePasswordQuery = 'UPDATE accounts SET password = ? WHERE id = ?';
         await new Promise((resolve, reject) => {
-            db.query(updatePasswordQuery, [hashedPassword, decoded.id], (err, results) => { // This takes the id from the authentication token to ensure only this account can be resetted
+            db.execute(updatePasswordQuery, [hashedPassword, decoded.id], (err, results) => { // This takes the id from the authentication token to ensure only this account can be resetted
                 if (err) return reject(err);
                 resolve(results);
             });
