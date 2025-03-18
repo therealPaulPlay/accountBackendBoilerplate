@@ -108,26 +108,23 @@ async function isPasswordValid(plainPassword, hashedPassword) {
 const SECRET_KEY = "YOUR_KEY"; // !CHANGE input a JWT secret key. Simply come up with a long string of numbers and characters, ideally up to 32 chars long. For better security, make sure to use a .env file and store your keys there
 
 function createNewJwtToken(user) {
-    let accessToken = '';
-
     try {
-        accessToken = jwt.sign(
+        const accessToken = jwt.sign(
             {
                 sub: user.email, // Subject (email address)
                 userId: user.id // Custom claim for user ID
             },
-            SECRET_KEY,
+            process.env.JWT_SECRET,
             {
-                expiresIn: "7d" // !CHANGE expiration period of the bearer token
+                expiresIn: "7d"
             }
         );
-    } catch (e) {
-        accessToken = '';
-        console.error('Token generation error: ', e.message);
+        console.info('JWT token generated successfully.');
+        return accessToken;
+    } catch (error) {
+        console.error('Token generation error: ', error.message);
+        return null;
     }
-
-    console.info('JWT token generated successfully.');
-    return accessToken;
 }
 
 // Check if the id from the bearer token matches the ip passed in the request. This is to make sure the token belongs to this user and not just any user.
@@ -210,7 +207,7 @@ app.post('/accounts/register', registerLimiter, async (req, res) => {
         if (userName.length > 50 || email.length > 100) {
             return res.status(400).json({ error: "Username or email are too long." });
         }
-        
+
         // Check if email already exists
         const emailExistsQuery = 'SELECT id FROM accounts WHERE email = ?';
         const existingEmailUser = await new Promise((resolve, reject) => {
